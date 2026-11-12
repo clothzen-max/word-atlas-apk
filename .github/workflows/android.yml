@@ -42,8 +42,25 @@ jobs:
       - name: 安装壳工程依赖
         run: npm install --no-audit --no-fund
 
-      - name: 拉取词光源码并构建
+      - name: 拉取词光源码并构建（离线全量）
+        if: ${{ inputs.remote_url == '' }}
         run: node scripts/build-web.mjs
+
+      - name: 生成占位页（在线壳，只保留骨架）
+        if: ${{ inputs.remote_url != '' }}
+        run: |
+          mkdir -p upstream/dist
+          cat > upstream/dist/index.html <<'HTML'
+          <!doctype html><html lang="zh"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+          <title>词光</title>
+          <style>html,body{margin:0;height:100%;background:#0B1220;color:#E6EEF8;
+          font:15px/1.6 system-ui,sans-serif;display:flex;align-items:center;
+          justify-content:center;text-align:center}</style></head>
+          <body><div><div style="font-size:22px;letter-spacing:.3em;margin-bottom:10px">词光</div>
+          <div style="opacity:.6">正在连接…</div></div></body></html>
+          HTML
+          ls -l upstream/dist
 
       - name: 生成 Android 工程
         env:
