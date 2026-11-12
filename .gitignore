@@ -1,0 +1,8 @@
+node_modules/
+upstream/
+android/
+ios/
+*.apk
+*.jks
+*.keystore
+.DS_Store
