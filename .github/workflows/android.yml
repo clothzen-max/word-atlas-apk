@@ -11,6 +11,9 @@ on:
     branches: [main]
     paths-ignore: ["README.md"]
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -45,6 +48,10 @@ jobs:
       - name: 拉取词光源码并构建（离线全量）
         if: ${{ inputs.remote_url == '' }}
         run: node scripts/build-web.mjs
+
+      - name: 资源瘦身（音频 24kbps / 插画 320px）
+        if: ${{ inputs.remote_url == '' }}
+        run: node scripts/slim.mjs
 
       - name: 生成占位页（在线壳，只保留骨架）
         if: ${{ inputs.remote_url != '' }}
@@ -84,6 +91,17 @@ jobs:
           echo "### 构建完成" >> $GITHUB_STEP_SUMMARY
           echo "- APK：\`$(basename "$APK")\`（$SIZE）" >> $GITHUB_STEP_SUMMARY
           echo "- 模式：$([ -n '${{ inputs.remote_url }}' ] && echo "在线壳 ${{ inputs.remote_url }}" || echo '离线全量')" >> $GITHUB_STEP_SUMMARY
+
+      - name: 发布到 Release（便于镜像加速下载）
+        if: ${{ inputs.remote_url == '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk /tmp/word-atlas.apk
+          gh release delete slim-apk --yes --cleanup-tag 2>/dev/null || true
+          gh release create slim-apk /tmp/word-atlas.apk \
+            --title "词光 APK（瘦身离线版）" \
+            --notes "内置 7,298 词条、插画、英音美音与例句朗读；音频 24 kbps，插画 320 px。"
 
       - uses: actions/upload-artifact@v4
         with:
